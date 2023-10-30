@@ -3,17 +3,24 @@ import React from 'react';
 import Movie from './Movie';
 import classes from './MoviesList.module.css';
 
-const MovieList = (props) => {
+const MovieList = ({ movies }) => {
   return (
     <ul className={classes['movies-list']}>
-      {props.movies.map((movie) => (
-        <Movie
-          key={movie.id}
-          title={movie.title}
-          releaseDate={movie.releaseDate}
-          openingText={movie.openingText}
-        />
-      ))}
+      {movies.map(
+        ({
+          title,
+          episode_id: episodeID,
+          release_data: releaseData,
+          opening_crawl: openingCrawl,
+        }) => (
+          <Movie
+            key={episodeID}
+            title={title}
+            releaseDate={releaseData}
+            openingText={openingCrawl}
+          />
+        )
+      )}
     </ul>
   );
 };
