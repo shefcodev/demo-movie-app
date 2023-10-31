@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 import MoviesList from './components/MoviesList';
+import AddMovie from './components/AddMovie';
 import './App.css';
 
 function App() {
@@ -8,11 +9,13 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchMoviesHandler = async () => {
+  const fetchMoviesHandler = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await fetch('https://swapi.dev/api/film/');
+      const response = await fetch(
+        'https://react-movie-app-979be-default-rtdb.firebaseio.com/movies.json'
+      );
 
       if (!response.ok) {
         throw new Error('Invalid Request URL');
@@ -20,12 +23,25 @@ function App() {
 
       const data = await response.json();
 
-      const transformedMovies = data.results.map(
-        ({ episode_id, title, opening_crawl, release_date }) => ({
-          episodeID: episode_id,
+      console.log(data);
+
+      const loadedMovies = [];
+
+      for (let key in data) {
+        loadedMovies.push({
+          id: key,
+          title: data[key].title,
+          openingText: data[key].openingText,
+          releaseDate: data[key].releaseDate,
+        });
+      }
+
+      const transformedMovies = loadedMovies.map(
+        ({ id, title, openingText, releaseDate }) => ({
+          id,
           title,
-          openingText: opening_crawl,
-          releaseDate: release_date,
+          openingText,
+          releaseDate,
         })
       );
 
@@ -36,31 +52,55 @@ function App() {
     } finally {
       setIsLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    fetchMoviesHandler();
+  }, [fetchMoviesHandler]);
+
+  const addMovieHandler = async (movie) => {
+    const response = await fetch(
+      'https://react-movie-app-979be-default-rtdb.firebaseio.com/movies.json',
+      {
+        method: 'POST',
+        body: JSON.stringify(movie),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    const data = await response.json();
+    console.log(data);
   };
+
+  let content = <p>No Movies Found.</p>;
+
+  if (isLoading) {
+    content = (
+      <p>
+        <i>Loading...</i>
+      </p>
+    );
+  } else if (error) {
+    content = (
+      <p>
+        <i>{error}</i>
+      </p>
+    );
+  } else if (movies.length > 0) {
+    content = <MoviesList movies={movies} />;
+  }
 
   return (
     <React.Fragment>
       <section>
-        <button onClick={fetchMoviesHandler}>Fetch Movies</button>
+        <AddMovie onAddMovie={addMovieHandler} />
       </section>
       <section>
-        {!isLoading && movies.length > 0 && <MoviesList movies={movies} />}
-        {!isLoading && movies.length === 0 && (
-          <p>
-            <i>No Movies Found.</i>
-          </p>
-        )}
-        {isLoading && (
-          <p>
-            <i>Loading...</i>
-          </p>
-        )}
-        {!isLoading && error && (
-          <p>
-            <i>{error}</i>
-          </p>
-        )}
+        <button onClick={fetchMoviesHandler}>Fetch Movies</button>
       </section>
+      <section>{content}</section>
     </React.Fragment>
   );
 }
